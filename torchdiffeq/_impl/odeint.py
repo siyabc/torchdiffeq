@@ -93,11 +93,13 @@ def odeint(func, y0, t, *, rtol=1e-7, atol=1e-9, method=None, options=None, even
 
     if event_fn is None:
         solution = solver.integrate(t)
+        print("！！！====solution:", solution.grad_fn)
     else:
         event_t, solution = solver.integrate_until_event(t[0], event_fn)
         event_t = event_t.to(t)
         if t_is_reversed:
             event_t = -event_t
+
 
     if shapes is not None:
         solution = _flat_to_shape(solution, (len(t),), shapes)

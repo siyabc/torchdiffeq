@@ -27,11 +27,14 @@ class AdaptiveStepsizeODESolver(metaclass=abc.ABCMeta):
 
     def integrate(self, t):
         solution = torch.empty(len(t), *self.y0.shape, dtype=self.y0.dtype, device=self.y0.device)
+        print("2222===solution:", solution.grad_fn)
         solution[0] = self.y0
+        print("333===solution:", solution.grad_fn)
         t = t.to(self.dtype)
         self._before_integrate(t)
         for i in range(1, len(t)):
             solution[i] = self._advance(t[i])
+        print("444===solution:", solution.grad_fn)
         return solution
 
 

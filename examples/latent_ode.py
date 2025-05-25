@@ -15,8 +15,8 @@ import torch.nn.functional as F
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--adjoint', type=eval, default=False)
-parser.add_argument('--visualize', type=eval, default=False)
-parser.add_argument('--niters', type=int, default=2000)
+parser.add_argument('--visualize', type=eval, default=True)
+parser.add_argument('--niters', type=int, default=1000)
 parser.add_argument('--lr', type=float, default=0.01)
 parser.add_argument('--gpu', type=int, default=0)
 parser.add_argument('--train_dir', type=str, default=None)
@@ -26,7 +26,6 @@ if args.adjoint:
     from torchdiffeq import odeint_adjoint as odeint
 else:
     from torchdiffeq import odeint
-
 
 def generate_spiral2d(nspiral=1000,
                       ntotal=500,
@@ -222,6 +221,8 @@ if __name__ == '__main__':
     samp_trajs = torch.from_numpy(samp_trajs).float().to(device)
     samp_ts = torch.from_numpy(samp_ts).float().to(device)
 
+
+
     # model
     func = LatentODEfunc(latent_dim, nhidden).to(device)
     rec = RecognitionRNN(latent_dim, obs_dim, rnn_nhidden, nspiral).to(device)
@@ -259,6 +260,7 @@ if __name__ == '__main__':
             z0 = epsilon * torch.exp(.5 * qz0_logvar) + qz0_mean
 
             # forward in time and solve ode for reconstructions
+            print("samp_ts:", samp_ts)
             pred_z = odeint(func, z0, samp_ts).permute(1, 0, 2)
             pred_x = dec(pred_z)
 
@@ -293,7 +295,8 @@ if __name__ == '__main__':
             print('Stored ckpt at {}'.format(ckpt_path))
     print('Training complete after {} iters.'.format(itr))
 
-    if args.visualize:
+    # if args.visualize:
+    if 1:
         with torch.no_grad():
             # sample from trajectorys' approx. posterior
             h = rec.initHidden().to(device)
@@ -334,5 +337,6 @@ if __name__ == '__main__':
         plt.scatter(samp_traj[:, 0], samp_traj[
                     :, 1], label='sampled data', s=3)
         plt.legend()
+        plt.show()
         plt.savefig('./vis.png', dpi=500)
         print('Saved visualization figure at {}'.format('./vis.png'))

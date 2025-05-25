@@ -22,7 +22,7 @@ parser.add_argument('--width', type=int, default=64)
 parser.add_argument('--hidden_dim', type=int, default=32)
 parser.add_argument('--gpu', type=int, default=0)
 parser.add_argument('--train_dir', type=str, default=None)
-parser.add_argument('--results_dir', type=str, default="./results")
+parser.add_argument('--results_dir', type=str, default="./")
 args = parser.parse_args()
 
 if args.adjoint:
@@ -203,7 +203,8 @@ if __name__ == '__main__':
             print('Stored ckpt at {}'.format(ckpt_path))
     print('Training complete after {} iters.'.format(itr))
 
-    if args.viz:
+    # if args.viz:
+    if 1:
         viz_samples = 30000
         viz_timesteps = 41
         target_sample, _ = get_batch(viz_samples)
@@ -277,7 +278,8 @@ if __name__ == '__main__':
 
                 plt.savefig(os.path.join(args.results_dir, f"cnf-viz-{int(t*1000):05d}.jpg"),
                            pad_inches=0.2, bbox_inches='tight')
-                plt.close()
+                plt.show()
+                # plt.close()
 
             img, *imgs = [Image.open(f) for f in sorted(glob.glob(os.path.join(args.results_dir, f"cnf-viz-*.jpg")))]
             img.save(fp=os.path.join(args.results_dir, "cnf-viz.gif"), format='GIF', append_images=imgs,

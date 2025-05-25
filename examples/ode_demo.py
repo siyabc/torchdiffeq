@@ -12,7 +12,7 @@ parser.add_argument('--method', type=str, choices=['dopri5', 'adams'], default='
 parser.add_argument('--data_size', type=int, default=1000)
 parser.add_argument('--batch_time', type=int, default=10)
 parser.add_argument('--batch_size', type=int, default=20)
-parser.add_argument('--niters', type=int, default=2000)
+parser.add_argument('--niters', type=int, default=100)
 parser.add_argument('--test_freq', type=int, default=20)
 parser.add_argument('--viz', action='store_true')
 parser.add_argument('--gpu', type=int, default=0)
@@ -26,9 +26,13 @@ else:
 
 device = torch.device('cuda:' + str(args.gpu) if torch.cuda.is_available() else 'cpu')
 
-true_y0 = torch.tensor([[2., 0.]]).to(device)
-t = torch.linspace(0., 25., args.data_size).to(device)
-true_A = torch.tensor([[-0.1, 2.0], [-2.0, -0.1]]).to(device)
+# true_y0 = torch.tensor([[2., 0.]]).to(device)
+true_y0 = torch.tensor([[2., 0.]])
+
+# t = torch.linspace(0., 25., args.data_size).to(device)
+# true_A = torch.tensor([[-0.1, 2.0], [-2.0, -0.1]]).to(device)
+t = torch.linspace(0., 25., args.data_size)
+true_A = torch.tensor([[-0.1, 2.0], [-2.0, -0.1]])
 
 
 class Lambda(nn.Module):
@@ -39,10 +43,12 @@ class Lambda(nn.Module):
 
 with torch.no_grad():
     true_y = odeint(Lambda(), true_y0, t, method='dopri5')
+    # print(true_y)
 
 
 def get_batch():
     s = torch.from_numpy(np.random.choice(np.arange(args.data_size - args.batch_time, dtype=np.int64), args.batch_size, replace=False))
+    print("s:", s)
     batch_y0 = true_y[s]  # (M, D)
     batch_t = t[:args.batch_time]  # (T)
     batch_y = torch.stack([true_y[s + i] for i in range(args.batch_time)], dim=0)  # (T, M, D)
@@ -54,7 +60,8 @@ def makedirs(dirname):
         os.makedirs(dirname)
 
 
-if args.viz:
+# if args.viz:
+if 1:
     makedirs('png')
     import matplotlib.pyplot as plt
     fig = plt.figure(figsize=(12, 4), facecolor='white')
@@ -65,9 +72,8 @@ if args.viz:
 
 
 def visualize(true_y, pred_y, odefunc, itr):
-
-    if args.viz:
-
+    # if args.viz:
+    if 1:
         ax_traj.cla()
         ax_traj.set_title('Trajectories')
         ax_traj.set_xlabel('t')
@@ -125,7 +131,9 @@ class ODEFunc(nn.Module):
                 nn.init.constant_(m.bias, val=0)
 
     def forward(self, t, y):
-        return self.net(y**3)
+        # print("---@@@@@@@")
+        res = self.net(y**3)
+        return res
 
 
 class RunningAverageMeter(object):
@@ -161,9 +169,15 @@ if __name__ == '__main__':
     loss_meter = RunningAverageMeter(0.97)
 
     for itr in range(1, args.niters + 1):
+        print("itr:", itr)
         optimizer.zero_grad()
         batch_y0, batch_t, batch_y = get_batch()
-        pred_y = odeint(func, batch_y0, batch_t).to(device)
+        # print("batch_t:",batch_t.grad_fn)
+        # print("batch_y0:", batch_y0.grad_fn)
+        # print("batch_y:", batch_y.grad_fn)
+        # res = func(batch_y0)
+        pred_y = odeint(func, batch_y0, batch_t)
+        print("pred_y:", pred_y.grad_fn)
         loss = torch.mean(torch.abs(pred_y - batch_y))
         loss.backward()
         optimizer.step()
@@ -180,3 +194,4 @@ if __name__ == '__main__':
                 ii += 1
 
         end = time.time()
+    print("--")
